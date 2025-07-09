@@ -42,7 +42,7 @@ def inject_jsonld():
     file = repo.get_contents(path, ref=GITHUB_BRANCH)
     html = file.decoded_content.decode()
     prompt = f"Inject full Hotel JSON-LD + meta tags into this HTML for {TARGET_URL}:\n{html}"
-    resp = openai.ChatCompletion.create(
+    resp = openai.chat.completions.create(
         model="gpt-3.5-turbo",
         messages=[{"role":"user","content":prompt}],
         temperature=0
@@ -54,7 +54,7 @@ def inject_jsonld():
 
 def generate_blog_and_citations():
     prompt = f"Write a 300-word geo-targeted blog post about Fontainebleau in Miami Beach with links to {TARGET_URL}."
-    resp = openai.ChatCompletion.create(
+    resp = openai.chat.completions.create(
         model="gpt-3.5-turbo",
         messages=[{"role":"user","content":prompt}],
         temperature=0.7
@@ -95,7 +95,7 @@ def push_sitemap_and_recrawl():
 
 def press_release_and_outreach():
     prompt = f"Write a press release for a major event at {TARGET_URL}. Include date, location, and link."
-    resp = openai.ChatCompletion.create(
+    resp = openai.chat.completions.create(
         model="gpt-3.5-turbo",
         messages=[{"role":"user","content":prompt}],
         temperature=0.7
