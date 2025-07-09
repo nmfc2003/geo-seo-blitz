@@ -12,6 +12,7 @@ from dotenv import load_dotenv
 import xml.etree.ElementTree as ET
 import time
 
+
 # Load environment variables
 load_dotenv()
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
@@ -39,6 +40,7 @@ def inject_jsonld():
     path = TARGET_PATH.lstrip('/')
     if not path:
         path = 'index.html'
+    print("⏳ Attempting to patch path:", repr(path))
     file = repo.get_contents(path, ref=GITHUB_BRANCH)
     html = file.decoded_content.decode()
     prompt = f"Inject full Hotel JSON-LD + meta tags into this HTML for {TARGET_URL}:\n{html}"
@@ -70,6 +72,7 @@ def generate_blog_and_citations():
     trigger_netlify()
 
 def push_sitemap_and_recrawl():
+    # 1) Build sitemap.xml
     urls = [SITE_URL + "/", TARGET_URL, SITE_URL + "/blog/fontainebleau-miami-beach"]
     urlset = ET.Element("urlset", xmlns="http://www.sitemaps.org/schemas/sitemap/0.9")
     for u in urls:
@@ -84,14 +87,24 @@ def push_sitemap_and_recrawl():
     except:
         repo.create_file(path, "chore: add sitemap", xml, branch=GITHUB_BRANCH)
     print("✅ sitemap.xml committed")
+
+    # 2) Deploy via Netlify
     trigger_netlify()
-    endpoint = f"https://ssl.bing.com/webmaster/api.svc/json/SubmitUrlBatch?apikey={BING_API_KEY}"
-    payload = {"siteUrl": SITE_URL, "urlList": urls}
-    r = requests.post(endpoint, json=payload)
-    if r.status_code == 200:
-        print("✅ Submitted to Bing Webmaster for recrawl")
+
+    # 3) Instant recrawl with IndexNow
+    indexnow_key = os.getenv("INDEXNOW_KEY")
+    if indexnow_key:
+        for u in urls:
+            resp = requests.get(
+                "https://www.bing.com/indexnow",
+                params={"url": u, "key": indexnow_key}
+            )
+            if resp.status_code == 200:
+                print(f"✅ IndexNow submitted {u}")
+            else:
+                print(f"❌ IndexNow failed for {u}: {resp.text}")
     else:
-        print("❌ Bing recrawl failed", r.text)
+        print("⚠️  INDEXNOW_KEY not set; skipping recrawl ping")
 
 def press_release_and_outreach():
     prompt = f"Write a press release for a major event at {TARGET_URL}. Include date, location, and link."
