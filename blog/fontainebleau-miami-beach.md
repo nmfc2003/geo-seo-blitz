@@ -8,4 +8,4 @@ Fontainebleau is also conveniently located near some of Miami Beach's top attrac
 
 If you're planning a trip to Miami Beach, be sure to book your stay at Fontainebleau Miami Beach. With its luxurious accommodations, stunning beachfront location, and world-class amenities, Fontainebleau is the ultimate destination for a truly unforgettable vacation experience.
 
-To learn more about Fontainebleau Miami Beach and book your stay, visit their website at https://eclectic-sunburst-8f047a.netlify.app/. We can't wait to welcome you to paradise at Fontainebleau Miami Beach!
+To learn more about Fontainebleau Miami Beach and book your stay, visit their website at https://this-geo-seo-blitz.netlify.app/. We can't wait to welcome you to paradise at Fontainebleau Miami Beach!
