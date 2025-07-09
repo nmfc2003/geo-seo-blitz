@@ -76,35 +76,48 @@ def push_sitemap_and_recrawl():
     urls = [SITE_URL + "/", TARGET_URL, SITE_URL + "/blog/fontainebleau-miami-beach"]
     urlset = ET.Element("urlset", xmlns="http://www.sitemaps.org/schemas/sitemap/0.9")
     for u in urls:
-        url = ET.SubElement(urlset, "url")
-        ET.SubElement(url, "loc").text = u
-        ET.SubElement(url, "lastmod").text = time.strftime("%Y-%m-%d")
-    xml = ET.tostring(urlset, encoding="utf-8", method="xml").decode()
+        url_elem = ET.SubElement(urlset, "url")
+        ET.SubElement(url_elem, "loc").text = u
+        ET.SubElement(url_elem, "lastmod").text = time.strftime("%Y-%m-%d")
+    sitemap_content = ET.tostring(urlset, encoding="utf-8", method="xml").decode()
+
+    # Commit sitemap.xml to GitHub
     path = "sitemap.xml"
     try:
-        file = repo.get_contents(path, ref=GITHUB_BRANCH)
-        repo.update_file(path, "chore: update sitemap", xml, file.sha, branch=GITHUB_BRANCH)
+        existing = repo.get_contents(path, ref=GITHUB_BRANCH)
+        repo.update_file(path,
+                         "chore: update sitemap",
+                         sitemap_content,
+                         existing.sha,
+                         branch=GITHUB_BRANCH)
     except:
-        repo.create_file(path, "chore: add sitemap", xml, branch=GITHUB_BRANCH)
+        repo.create_file(path,
+                         "chore: add sitemap",
+                         sitemap_content,
+                         branch=GITHUB_BRANCH)
     print("✅ sitemap.xml committed")
 
-    # 2) Deploy via Netlify
+    # 2) Trigger Netlify deploy
     trigger_netlify()
 
-    # 3) Instant recrawl with IndexNow
-    indexnow_key = os.getenv("INDEXNOW_KEY")
-    if indexnow_key:
-        for u in urls:
-            resp = requests.get(
-                "https://www.bing.com/indexnow",
-                params={"url": u, "key": indexnow_key}
-            )
-            if resp.status_code == 200:
-                print(f"✅ IndexNow submitted {u}")
-            else:
-                print(f"❌ IndexNow failed for {u}: {resp.text}")
+    # 3) Submit URLs for recrawl via Bing SubmitUrlBatch API
+    BING_API_KEY = os.getenv("BING_API_KEY")
+    if BING_API_KEY:
+        endpoint = (
+            "https://ssl.bing.com/webmaster/api.svc/json/SubmitUrlBatch"
+            f"?apikey={BING_API_KEY}"
+        )
+        payload = {
+            "siteUrl": SITE_URL,
+            "urlList": urls
+        }
+        resp = requests.post(endpoint, json=payload)
+        if resp.status_code == 200:
+            print("✅ Submitted to Bing Webmaster for recrawl")
+        else:
+            print("❌ Bing recrawl failed:", resp.status_code, resp.text)
     else:
-        print("⚠️  INDEXNOW_KEY not set; skipping recrawl ping")
+        print("⚠️ BING_API_KEY not set; skipping Bing recrawl submission")
 
 def press_release_and_outreach():
     prompt = f"Write a press release for a major event at {TARGET_URL}. Include date, location, and link."
